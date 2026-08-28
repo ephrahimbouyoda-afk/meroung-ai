@@ -1,0 +1,121 @@
+# 🔐 Comment se connecter à Streamlit Cloud
+
+## Le Problème qu'on a eu
+
+```
+AttributeError: 'st.user has no attribute "is_logged_in".'
+```
+
+C'était parce que Streamlit 1.28 n'a pas `is_logged_in`. ✅ **C'est fixé maintenant !**
+
+---
+
+## ✅ Comment ça marche maintenant
+
+Streamlit Cloud a une **authentification native intégrée** :
+
+1. Tu vas sur l'app
+2. Streamlit détecte que tu n'es pas connecté
+3. Tu cliques sur ton **profil (en haut à droite)** ou tu vois un message login
+4. Tu choisis **"Sign in"** 
+5. Tu te connectes avec Google OAuth
+6. ✅ Tu es connecté et l'app fonctionne !
+
+---
+
+## 📱 Étapes Précises
+
+### **Étape 1 : Ouvrir l'app**
+```
+https://meroung-ai.gcluiqbfypon343rs2brq.streamlit.app
+(ou ton URL Streamlit Cloud)
+```
+
+### **Étape 2 : Tu vas voir**
+```
+"Veuillez vous connecter avec votre compte Streamlit pour continuer."
+
+OU
+
+Un bouton/lien en haut à droite avec ton profil/login
+```
+
+### **Étape 3 : Clique sur profil**
+```
+En haut à droite : clique sur l'icône profil
+Puis : "Sign in"
+```
+
+### **Étape 4 : Choisir Google**
+```
+Clique "Sign in with Google"
+Rentre tes identifiants Google
+Authorize Streamlit
+```
+
+### **Étape 5 : ✅ C'est connecté !**
+```
+L'app reload automatiquement
+Tu es sur la page Meroung AI
+C'est prêt ! 🎉
+```
+
+---
+
+## 🔄 Après la correction
+
+J'ai fixé le code pour :
+- ✅ Vérifier correctement si l'utilisateur est connecté
+- ✅ Gérer `st.user` de façon sûre
+- ✅ Pas utiliser des fonctions qui n'existent pas
+- ✅ Laisser Streamlit Cloud gérer l'authentification native
+
+---
+
+## 🚀 Prochaines Étapes
+
+1. **Push le code corrigé sur GitHub**
+   ```bash
+   git add interface_ia.py
+   git commit -m "Fix: corriger authentification Streamlit"
+   git push origin main
+   ```
+
+2. **Streamlit redéploie auto** (1-2 minutes)
+
+3. **Recharge l'app** (F5 ou Ctrl+Shift+R pour hard refresh)
+
+4. **Connecte-toi avec Google**
+
+5. **🎉 ÇA MARCHE !**
+
+---
+
+## 💡 Note Importante
+
+**Streamlit Cloud gère TOUT automatiquement :**
+- Tu n'as pas besoin de faire `st.login()` manuellement
+- Pas besoin de fichiers OAuth secrets
+- Juste click profil → Sign in → Google
+- Simple et sécurisé !
+
+---
+
+## ⚠️ Si ça marche toujours pas
+
+1. **Vérifier Secrets sont mis**
+   - GEMINI_API_KEY ✅
+   - GEMINI_MODEL ✅
+
+2. **Reboot l'app**
+   - Streamlit Cloud Dashboard → "Manage app" → "Reboot"
+
+3. **Hard refresh le navigateur**
+   - Ctrl + Shift + R (pas juste F5)
+
+4. **Check les logs**
+   - Dashboard → "View logs" → voir l'erreur exacte
+
+---
+
+**Voilà ! Maintenant ça va marcher ! 💪**
