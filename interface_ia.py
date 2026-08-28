@@ -614,7 +614,10 @@ def generer_et_ajouter_reponse(prompt_texte, contenu_requete):
 # ==========================================
 # GESTION DE LA CONNEXION GOOGLE
 # ==========================================
-if not st.user.is_logged_in:
+# Vérifier si l'utilisateur est connecté via st.user
+is_logged_in = hasattr(st.user, "email") and st.user.email is not None
+
+if not is_logged_in:
     # CSS
     st.markdown("""
     <style>
@@ -674,27 +677,22 @@ if not st.user.is_logged_in:
     </style>
     """, unsafe_allow_html=True)
 
-    # Contenu
+    # Message d'authentification
     col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        st.markdown("### Meroung AI", help="")
-        st.caption("Votre assistant pédagogique personnel")
-
+        st.markdown("### 🤖 Meroung AI")
+        st.caption("Assistant pédagogique personnel")
         st.markdown("---")
-
-        # Bouton Google
-        if st.button("🔗 Continuer avec Google", use_container_width=True, key="btn_google_login"):
-            logger.info("➡️ Redirection Google OAuth")
-            st.login("google")
-
+        st.info(
+            "**Veuillez vous connecter avec votre compte Streamlit pour continuer.**\n\nStreamlit Cloud supporte Google OAuth natif.")
         st.markdown("---")
-        st.caption("En continuant, vous acceptez les conditions d'utilisation")
+        st.caption("Cliquez sur votre profil (en haut à droite) pour vous connecter")
 
     st.stop()
 
 # Utilisateur connecté
-user_email = st.user.email or "utilisateur@inconnu"
-username_connecte = st.user.name or user_email
+user_email = getattr(st.user, "email", None) or "utilisateur@inconnu"
+username_connecte = getattr(st.user, "name", None) or user_email
 st.session_state.user_connecte = username_connecte
 logger.info(f"👤 Utilisateur connecté : {username_connecte}")
 
@@ -812,14 +810,19 @@ if st.session_state.mode_app == "academy" and st.session_state.get("academy_step
 # ==========================================
 with st.sidebar:
     st.title(f"📌 {APP_NAME}")
-    if getattr(st.user, "picture", None):
-        st.image(st.user.picture, width=60)
+    user_picture = getattr(st.user, "picture", None)
+    if user_picture:
+        try:
+            st.image(user_picture, width=60)
+        except:
+            pass
     st.markdown(f"👤 **{username_connecte}**")
     st.caption("✨ Messages illimités")
 
     if st.button("Déconnexion", use_container_width=True):
         logger.info(f"👋 Déconnexion")
-        st.logout()
+        # Streamlit Cloud gère la déconnexion automatiquement
+        st.rerun()
 
     st.markdown("---")
 
