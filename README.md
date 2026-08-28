@@ -270,13 +270,9 @@ meroung-ai/
 
 ## 👨‍💼 À Propos
 
-**Créateur :** Ephrahim Bouyoda  
-**Entreprise :** PDK-GROUP (Yaoundé, Cameroun)  
+**Créateur :** Bouyamoung Meroung  
+**Entreprise :** Meroung Tech (Yaoundé, Cameroun)  
 **Tech Stack :** Python + Streamlit + Gemini AI
-
-**Autres Projets :**
-- 🎵 Voix de ton cœur SARL (Music Production)
-- 💪 La Clé du Succès (Motivational Content)
 
 ---
 
@@ -288,7 +284,7 @@ MIT License - Libre d'utilisation
 
 ## 📞 Support
 
-- 📧 Contact : ephrahim@pdk-group.cm
+- 📧 Contact : ephrahimbouyoda@gmail.com
 - 🐛 Issues : GitHub Issues
 - 💬 Feedback : Bienvenu !
 
