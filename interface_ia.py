@@ -614,111 +614,206 @@ def generer_et_ajouter_reponse(prompt_texte, contenu_requete):
 # ==========================================
 # GESTION DE LA CONNEXION GOOGLE
 # ==========================================
-# Vérifier si l'utilisateur est connecté via st.user
-is_logged_in = hasattr(st.user, "email") and st.user.email is not None
+# ============================================================
+# 🔐 AUTHENTIFICATION GOOGLE - MEROUNG AI
+# ============================================================
 
+# Vérifier si l'utilisateur est connecté
+try:
+    is_logged_in = st.user.is_logged_in
+except Exception:
+    is_logged_in = False
+
+
+# ------------------------------------------------------------
+# ÉCRAN DE CONNEXION
+# ------------------------------------------------------------
 if not is_logged_in:
-    # CSS
+
     st.markdown("""
     <style>
-        [data-testid="stSidebarNav"] { display: none; }
-        [data-testid="stSidebarUserContent"] { display: none; }
-        .st-emotion-cache-1y4p8pa { display: none; }
+        [data-testid="stSidebarNav"] {
+            display: none;
+        }
+
+        [data-testid="stSidebarUserContent"] {
+            display: none;
+        }
 
         html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
             background: #ffffff;
         }
 
-        .stMainBlockContainer {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .login-wrapper {
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .login-header {
+        .login-container {
+            max-width: 500px;
+            margin: 120px auto 0 auto;
             text-align: center;
-            margin-bottom: 40px;
         }
 
-        .login-header h1 {
-            font-size: 32px;
+        .login-title {
+            font-size: 36px;
             font-weight: 700;
-            margin: 0 0 8px 0;
-            color: #000;
+            color: #111111;
+            margin-bottom: 8px;
         }
 
-        .login-header p {
+        .login-subtitle {
+            font-size: 16px;
+            color: #888888;
+            margin-bottom: 35px;
+        }
+
+        .login-description {
             font-size: 14px;
-            color: #999;
-            margin: 0;
-        }
-
-        .login-footer {
-            text-align: center;
-            margin-top: 32px;
-            font-size: 12px;
-            color: #999;
-        }
-
-        .login-footer a {
-            color: #3b82f6;
-            text-decoration: none;
+            color: #666666;
+            margin-bottom: 25px;
         }
     </style>
     """, unsafe_allow_html=True)
 
-    # Message d'authentification
-    col1, col2, col3 = st.columns([1, 1, 1])
+    st.markdown("""
+    <div class="login-container">
+        <div class="login-title">🤖 Meroung AI</div>
+        <div class="login-subtitle">
+            Assistant pédagogique personnel
+        </div>
+
+        <div class="login-description">
+            Connectez-vous avec votre compte Google pour accéder à Meroung AI.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Bouton de connexion Google
+    col1, col2, col3 = st.columns([1, 2, 1])
+
     with col2:
-        st.markdown("### 🤖 Meroung AI")
-        st.caption("Assistant pédagogique personnel")
-        st.markdown("---")
-        st.info(
-            "**Veuillez vous connecter avec votre compte Streamlit pour continuer.**\n\nStreamlit Cloud supporte Google OAuth natif.")
-        st.markdown("---")
-        st.caption("Cliquez sur votre profil (en haut à droite) pour vous connecter")
+        if st.button(
+            "🔐  Se connecter avec Google",
+            use_container_width=True,
+            type="primary"
+        ):
+            st.login()
+
+    st.markdown("""
+    <div style="
+        text-align:center;
+        margin-top:30px;
+        color:#999;
+        font-size:12px;
+    ">
+        Connexion sécurisée avec Google
+    </div>
+    """, unsafe_allow_html=True)
 
     st.stop()
 
-# Utilisateur connecté
-user_email = getattr(st.user, "email", None) or "utilisateur@inconnu"
-username_connecte = getattr(st.user, "name", None) or user_email
-st.session_state.user_connecte = username_connecte
-logger.info(f"👤 Utilisateur connecté : {username_connecte}")
 
-# Enregistrement automatique en base de données
+# ============================================================
+# 👤 UTILISATEUR CONNECTÉ
+# ============================================================
+
+user_email = getattr(st.user, "email", None)
+
+username_connecte = (
+    getattr(st.user, "name", None)
+    or getattr(st.user, "given_name", None)
+    or user_email
+    or "Utilisateur"
+)
+
+# Sauvegarde de l'utilisateur dans la session
+st.session_state.user_connecte = username_connecte
+st.session_state.user_email = user_email
+
+logger.info(
+    f"👤 Utilisateur connecté : {username_connecte} "
+    f"({user_email})"
+)
+
+
+# ============================================================
+# 💾 ENREGISTREMENT DE L'UTILISATEUR EN BASE
+# ============================================================
+
 try:
+
     conn = sqlite3.connect(DATABASE_NAME)
     c = conn.cursor()
-    c.execute("SELECT * FROM users WHERE username = ?", (user_email,))
-    if not c.fetchone():
-        c.execute("INSERT INTO users (username, password, solde_credits) VALUES (?, ?, 5)",
-                  (user_email, "oauth_google"))
-        conn.commit()
-    conn.close()
-except Exception as e:
-    logger.warning(f"⚠️ Erreur enregistrement : {e}")
 
-# Dossier et profil utilisateur
-st.session_state.dossier_discussions = dossier_utilisateur(user_email)
+    c.execute(
+        "SELECT * FROM users WHERE username = ?",
+        (user_email,)
+    )
+
+    utilisateur_existant = c.fetchone()
+
+    if not utilisateur_existant:
+
+        c.execute(
+            """
+            INSERT INTO users
+            (username, password, solde_credits)
+            VALUES (?, ?, ?)
+            """,
+            (
+                user_email,
+                "oauth_google",
+                5
+            )
+        )
+
+        conn.commit()
+
+    conn.close()
+
+except Exception as e:
+
+    logger.warning(
+        f"⚠️ Erreur enregistrement utilisateur : {e}"
+    )
+
+
+# ============================================================
+# 📁 DOSSIER DES DISCUSSIONS
+# ============================================================
+
+st.session_state.dossier_discussions = (
+    dossier_utilisateur(user_email)
+)
+
+
+# ============================================================
+# 👤 PROFIL UTILISATEUR
+# ============================================================
+
 if "profil_utilisateur" not in st.session_state:
-    st.session_state.profil_utilisateur = charger_profil_utilisateur(user_email)
+
+    st.session_state.profil_utilisateur = (
+        charger_profil_utilisateur(user_email)
+    )
+
+
+# ============================================================
+# 📄 FICHIER DE LA DISCUSSION COURANTE
+# ============================================================
+
 if "fichier_courant" not in st.session_state:
-    st.session_state.fichier_courant = nom_fichier_horodate(st.session_state.dossier_discussions)
+
+    st.session_state.fichier_courant = (
+        nom_fichier_horodate(
+            st.session_state.dossier_discussions
+        )
+    )
+
+
+# ============================================================
+# 💬 MESSAGES DE LA DISCUSSION
+# ============================================================
+
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "model", "text": f"Salut {username_connecte}, qu'est-ce qu'on crée ou analysons aujourd'hui ?"}
-    ]
+
+    st.session_state.messages = []
 
 # ==========================================
 # ÉCRAN MEROUNG ACADEMY
