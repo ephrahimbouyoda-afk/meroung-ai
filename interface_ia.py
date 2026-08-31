@@ -612,100 +612,30 @@ def generer_et_ajouter_reponse(prompt_texte, contenu_requete):
 
 
 # ==========================================
-# GESTION DE LA CONNEXION GOOGLE
+# GESTION DE LA CONNEXION GOOGLE - STREAMLIT CLOUD
 # ==========================================
-# ============================================================
-# 🔐 AUTHENTIFICATION GOOGLE - MEROUNG AI
-# ============================================================
 
-# Vérifier si l'utilisateur est connecté
-try:
-    is_logged_in = st.user.is_logged_in
-except Exception:
-    is_logged_in = False
+# ✅ VÉRIFICATION CORRECTE DE L'AUTHENTIFICATION
+is_logged_in = hasattr(st.user, "email") and st.user.email is not None
 
-
-# ------------------------------------------------------------
-# ÉCRAN DE CONNEXION
-# ------------------------------------------------------------
 if not is_logged_in:
-
+    # Écran de login
     st.markdown("""
     <style>
-        [data-testid="stSidebarNav"] {
-            display: none;
-        }
-
-        [data-testid="stSidebarUserContent"] {
-            display: none;
-        }
-
-        html, body {
-            background: #ffffff;
-        }
-
-        .login-container {
-            max-width: 500px;
-            margin: 120px auto 0 auto;
-            text-align: center;
-        }
-
-        .login-title {
-            font-size: 36px;
-            font-weight: 700;
-            color: #111111;
-            margin-bottom: 8px;
-        }
-
-        .login-subtitle {
-            font-size: 16px;
-            color: #888888;
-            margin-bottom: 35px;
-        }
-
-        .login-description {
-            font-size: 14px;
-            color: #666666;
-            margin-bottom: 25px;
-        }
+        [data-testid="stSidebarNav"] { display: none; }
+        [data-testid="stSidebarUserContent"] { display: none; }
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="login-container">
-        <div class="login-title">🤖 Meroung AI</div>
-        <div class="login-subtitle">
-            Assistant pédagogique personnel
-        </div>
-
-        <div class="login-description">
-            Connectez-vous avec votre compte Google pour accéder à Meroung AI.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # Bouton de connexion Google
-    col1, col2, col3 = st.columns([1, 2, 1])
-
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
-        if st.button(
-            "🔐  Se connecter avec Google",
-            use_container_width=True,
-            type="primary"
-        ):
-            st.login()
-
-    st.markdown("""
-    <div style="
-        text-align:center;
-        margin-top:30px;
-        color:#999;
-        font-size:12px;
-    ">
-        Connexion sécurisée avec Google
-    </div>
-    """, unsafe_allow_html=True)
-
+        st.markdown("### 🤖 Meroung AI")
+        st.caption("Assistant pédagogique personnel")
+        st.markdown("---")
+        st.info("**Veuillez vous connecter avec votre compte Streamlit pour continuer.**")
+        st.markdown("---")
+        st.caption("Cliquez sur votre profil (en haut à droite) pour vous connecter avec Google")
+    
     st.stop()
 
 
@@ -713,23 +643,17 @@ if not is_logged_in:
 # 👤 UTILISATEUR CONNECTÉ
 # ============================================================
 
-user_email = getattr(st.user, "email", None)
-
+user_email = getattr(st.user, "email", None) or "utilisateur@inconnu"
 username_connecte = (
-    getattr(st.user, "name", None)
-    or getattr(st.user, "given_name", None)
+    getattr(st.user, "name", None) 
+    or getattr(st.user, "given_name", None) 
     or user_email
-    or "Utilisateur"
 )
 
-# Sauvegarde de l'utilisateur dans la session
 st.session_state.user_connecte = username_connecte
 st.session_state.user_email = user_email
 
-logger.info(
-    f"👤 Utilisateur connecté : {username_connecte} "
-    f"({user_email})"
-)
+logger.info(f"👤 Utilisateur connecté : {username_connecte} ({user_email})")
 
 
 # ============================================================
@@ -737,83 +661,39 @@ logger.info(
 # ============================================================
 
 try:
-
     conn = sqlite3.connect(DATABASE_NAME)
     c = conn.cursor()
-
-    c.execute(
-        "SELECT * FROM users WHERE username = ?",
-        (user_email,)
-    )
-
-    utilisateur_existant = c.fetchone()
-
-    if not utilisateur_existant:
-
+    c.execute("SELECT * FROM users WHERE username = ?", (user_email,))
+    
+    if not c.fetchone():
         c.execute(
-            """
-            INSERT INTO users
-            (username, password, solde_credits)
-            VALUES (?, ?, ?)
-            """,
-            (
-                user_email,
-                "oauth_google",
-                5
-            )
+            "INSERT INTO users (username, password, solde_credits) VALUES (?, ?, ?)",
+            (user_email, "oauth_google", 5)
         )
-
         conn.commit()
-
+    
     conn.close()
-
 except Exception as e:
-
-    logger.warning(
-        f"⚠️ Erreur enregistrement utilisateur : {e}"
-    )
+    logger.warning(f"⚠️ Erreur enregistrement utilisateur : {e}")
 
 
 # ============================================================
-# 📁 DOSSIER DES DISCUSSIONS
+# 📁 INITIALISATION SESSION
 # ============================================================
 
-st.session_state.dossier_discussions = (
-    dossier_utilisateur(user_email)
-)
-
-
-# ============================================================
-# 👤 PROFIL UTILISATEUR
-# ============================================================
+st.session_state.dossier_discussions = dossier_utilisateur(user_email)
 
 if "profil_utilisateur" not in st.session_state:
-
-    st.session_state.profil_utilisateur = (
-        charger_profil_utilisateur(user_email)
-    )
-
-
-# ============================================================
-# 📄 FICHIER DE LA DISCUSSION COURANTE
-# ============================================================
+    st.session_state.profil_utilisateur = charger_profil_utilisateur(user_email)
 
 if "fichier_courant" not in st.session_state:
-
-    st.session_state.fichier_courant = (
-        nom_fichier_horodate(
-            st.session_state.dossier_discussions
-        )
-    )
-
-
-# ============================================================
-# 💬 MESSAGES DE LA DISCUSSION
-# ============================================================
+    st.session_state.fichier_courant = nom_fichier_horodate(st.session_state.dossier_discussions)
 
 if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "model", "text": f"Salut {username_connecte}, qu'est-ce qu'on crée ou analysons aujourd'hui ?"}
+    ]
 
-    st.session_state.messages = []
 
 # ==========================================
 # ÉCRAN MEROUNG ACADEMY
@@ -853,7 +733,6 @@ if st.session_state.mode_app == "academy" and st.session_state.get("academy_step
     st.markdown("### Tes informations")
 
     eleve_nom = st.text_input("Quel est ton nom ?", placeholder="Ex : Lucas", key="input_eleve_nom")
-
     niveaux = ["6ème", "5ème", "4ème", "3ème", "2nde", "1ère", "Terminale", "Licence", "Master", "Doctorat"]
     eleve_niveau = st.selectbox("Quel est ton niveau d'étude ?", niveaux, key="select_eleve_niveau")
 
@@ -879,7 +758,6 @@ if st.session_state.mode_app == "academy" and st.session_state.get("academy_step
 
     parent_nom = st.text_input("Ton nom (ou surnom) :", placeholder="Ex : Marie", key="input_parent_nom")
     enfant_nom = st.text_input("Nom de ton enfant :", placeholder="Ex : Lucas", key="input_enfant_nom")
-
     classes = ["6ème", "5ème", "4ème", "3ème", "2nde", "1ère", "Terminale", "Licence", "Master", "Doctorat"]
     enfant_classe = st.selectbox("Classe de l'enfant :", classes, key="select_classe")
 
@@ -916,12 +794,10 @@ with st.sidebar:
 
     if st.button("Déconnexion", use_container_width=True):
         logger.info(f"👋 Déconnexion")
-        # Streamlit Cloud gère la déconnexion automatiquement
         st.rerun()
 
     st.markdown("---")
 
-    # --- BOUTON MEROUNG ACADEMY ---
     if st.session_state.mode_app == "general":
         if st.button("🎓 Lancer Meroung Academy", use_container_width=True, key="btn_academy"):
             st.session_state.mode_app = "academy"
@@ -940,7 +816,6 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # --- PERSONNALISATION ---
     with st.expander("⚙️ Personnaliser"):
         profil = st.session_state.profil_utilisateur
 
@@ -1048,7 +923,6 @@ with st.sidebar:
 # INTERFACE PRINCIPALE
 # ==========================================
 
-# Afficher les messages
 for idx_message, message in enumerate(st.session_state.messages):
     avatar_icon = "👤" if message["role"] == "user" else "🤖"
     with st.chat_message(message["role"], avatar=avatar_icon):
@@ -1060,7 +934,6 @@ for idx_message, message in enumerate(st.session_state.messages):
             for nom_fichier in message.get("fichiers_joints", []):
                 st.caption(f"📎 {nom_fichier}")
 
-        # Export PDF
         if message["role"] == "model" and message.get("type") != "image" and message.get("text"):
             try:
                 pdf_bytes = generer_pdf_depuis_texte(f"Réponse — {APP_NAME}", message["text"])
@@ -1078,7 +951,6 @@ for idx_message, message in enumerate(st.session_state.messages):
             except Exception as e:
                 logger.warning(f"⚠️ Erreur PDF : {e}")
 
-# --- MODE VOCAL ---
 st.markdown("""
 <style>
     .bouton-micro {
@@ -1135,7 +1007,6 @@ if st.session_state.mode_vocal_actif:
             generer_et_ajouter_reponse("Message vocal", contenu_requete_audio)
             st.rerun()
 
-# --- SAISIE CHAT ---
 st.markdown("### 📝 Envoie un message ou une photo")
 
 chat_input_value = st.chat_input(
@@ -1156,7 +1027,6 @@ if chat_input_value:
         st.error(f"Message trop long (max {MAX_INPUT_LENGTH}).")
         st.stop()
 
-    # Auto-renaming
     if len(st.session_state.messages) == 1 and prompt:
         try:
             chemin_actuel = st.session_state.fichier_courant
@@ -1181,11 +1051,9 @@ if chat_input_value:
         for f in noms_fichiers_joints:
             st.caption(f"📎 {f}")
 
-    # --- ANALYSER LE TRAVAIL ACADEMY (PHOTOS) ---
     if st.session_state.mode_app == "academy" and st.session_state.academy_context and fichiers_joints:
         context = st.session_state.academy_context
 
-        # Traiter seulement les images
         for f in fichiers_joints:
             if f.type and f.type.startswith("image"):
                 try:
@@ -1194,8 +1062,6 @@ if chat_input_value:
 
                     with st.chat_message("assistant", avatar="🤖"):
                         st.markdown("### 📸 Analyse du travail reçu...")
-
-                        # Analyser avec vision Gemini
                         reponse_complete = analyser_travail_eleve(image_bytes, context, prompt)
 
                         if reponse_complete:
@@ -1208,7 +1074,6 @@ if chat_input_value:
         sauvegarder_discussion()
         st.rerun()
 
-    # --- FLOW NORMAL (non-Academy ou pas de photos) ---
     contenu_requete = [prompt]
 
     for f in fichiers_joints:
