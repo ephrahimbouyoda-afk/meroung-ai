@@ -632,79 +632,48 @@ if not is_logged_in:
 
     st.markdown("""
     <style>
-        [data-testid="stSidebarNav"] {
-            display: none;
-        }
+        [data-testid="stSidebarNav"] { display: none; }
+        [data-testid="stSidebarUserContent"] { display: none; }
+        html, body { background: #fafafa; }
 
-        [data-testid="stSidebarUserContent"] {
-            display: none;
+        /* Style du bouton pour qu'il ressemble au modèle épuré */
+        .stButton > button {
+            background-color: #000000 !important;
+            color: #ffffff !important;
+            border-radius: 8px !important;
+            font-weight: 500 !important;
+            border: none !important;
         }
-
-        html, body {
-            background: #ffffff;
-        }
-
-        .login-container {
-            max-width: 500px;
-            margin: 120px auto 0 auto;
-            text-align: center;
-        }
-
-        .login-title {
-            font-size: 36px;
-            font-weight: 700;
-            color: #111111;
-            margin-bottom: 8px;
-        }
-
-        .login-subtitle {
-            font-size: 16px;
-            color: #888888;
-            margin-bottom: 35px;
-        }
-
-        .login-description {
-            font-size: 14px;
-            color: #666666;
-            margin-bottom: 25px;
+        .stButton > button:hover {
+            background-color: #222222 !important;
         }
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown("""
-    <div class="login-container">
-        <div class="login-title">🤖 Meroung AI</div>
-        <div class="login-subtitle">
-            Assistant pédagogique personnel
-        </div>
+    # Centrer la carte sur la page
+    _, col_center, _ = st.columns([1, 1.2, 1])
 
-        <div class="login-description">
-            Connectez-vous avec votre compte Google pour accéder à Meroung AI.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    with col_center:
+        st.markdown(
+            "<div style='text-align: center; font-size: 28px; font-weight: 600; margin-bottom: 30px; color: #111;'>Se connecter</div>",
+            unsafe_allow_html=True)
 
-    # Bouton de connexion Google
-    col1, col2, col3 = st.columns([1, 2, 1])
+        # La carte blanche aux bordures arrondies (similaire au modèle)
+        with st.container(border=True):
+            st.markdown(
+                "<div style='text-align: center; font-weight: 700; font-size: 18px; color: #111; margin-top: 10px;'>🤖 Meroung AI</div>",
+                unsafe_allow_html=True)
+            st.markdown(
+                "<div style='text-align: center; color: #666; font-size: 13px; margin-bottom: 25px;'>Personnel auxiliaire pédagogique</div>",
+                unsafe_allow_html=True)
 
-    with col2:
-        if st.button(
-            "🔐  Se connecter avec Google",
-            use_container_width=True,
-            type="primary"
-        ):
-            st.login()
+            # Le bouton de connexion bien rangé À L'INTÉRIEUR de la carte
+            if st.button("Continuer avec Google", use_container_width=True):
+                st.login()
 
-    st.markdown("""
-    <div style="
-        text-align:center;
-        margin-top:30px;
-        color:#999;
-        font-size:12px;
-    ">
-        Connexion sécurisée avec Google
-    </div>
-    """, unsafe_allow_html=True)
+            st.markdown(
+                "<div style='text-align: center; color: #999; font-size: 11px; margin-top: 20px; margin-bottom: 10px;'>Connexion sécurisée avec Google</div>",
+                unsafe_allow_html=True)
 
     st.stop()
 
