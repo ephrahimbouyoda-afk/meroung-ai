@@ -611,73 +611,90 @@ def generer_et_ajouter_reponse(prompt_texte, contenu_requete):
         return True
 
 
-# ==========================================
-# GESTION DE LA CONNEXION GOOGLE
-# ==========================================
-# ============================================================
-# 🔐 AUTHENTIFICATION GOOGLE - MEROUNG AI
-# ============================================================
+# Configuration de tes identifiants (tu peux aussi les garder dans st.secrets)
+CLIENT_ID = st.secrets["auth"]["client_id"]
+CLIENT_SECRET = st.secrets["auth"]["client_secret"]
+REDIRECT_URI = st.secrets["auth"]["redirect_uri"]
+# 1. Vérifier si l'utilisateur est déjà connecté dans la session
+if "user_info" not in st.session_state:
+  st.session_state["user_info"] = None
 
-# Vérifier si l'utilisateur est connecté
-try:
-    is_logged_in = st.user.is_logged_in
-except Exception:
-    is_logged_in = False
+# 2. Récupérer le code de redirection renvoyé par Google dans l'URL
+query_params = st.query_params
+if "code" in query_params and not st.session_state["user_info"]:
+  code = query_params["code"]
 
+  # Étape cruciale : Échanger le code temporaire contre un jeton d'accès
+  token_url = "https://oauth2.googleapis.com/token"
+  payload = {
+      "code": code,
+      "client_id": CLIENT_ID,
+      "client_secret": CLIENT_SECRET,
+      "redirect_uri": REDIRECT_URI,
+      "grant_type": "authorization_code",
+  }
 
-# ------------------------------------------------------------
-# ÉCRAN DE CONNEXION
-# ------------------------------------------------------------
-if not is_logged_in:
+  response = requests.post(token_url, data=payload)
+  if response.status_code == 200:
+    token_data = response.json()
+    access_token = token_data.get("access_token")
 
-    st.markdown("""
-    <style>
-        [data-testid="stSidebarNav"] { display: none; }
-        [data-testid="stSidebarUserContent"] { display: none; }
-        html, body { background: #fafafa; }
+    # Récupérer les informations du profil utilisateur Google
+    user_info_response = requests.get(
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    if user_info_response.status_code == 200:
+      st.session_state["user_info"] = user_info_response.json()
+      # Nettoyer l'URL pour enlever le code temporaire
+      st.query_params.clear()
+      st.rerun()
+  else:
+    st.error(
+        "Erreur lors de l'authentification avec Google. Veuillez réessayer."
+    )
 
-        /* Style du bouton pour qu'il ressemble au modèle épuré */
-        .stButton > button {
-            background-color: #000000 !important;
-            color: #ffffff !important;
-            border-radius: 8px !important;
-            font-weight: 500 !important;
-            border: none !important;
-        }
-        .stButton > button:hover {
-            background-color: #222222 !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
+# 3. Affichage de l'interface selon l'état de connexion
+if st.session_state["user_info"] is None:
+  st.subheader("Connexion à Meroung AI")
 
-    # Centrer la carte sur la page
-    _, col_center, _ = st.columns([1, 1.2, 1])
+  # Construire le lien d'authentification officiel Google
+  google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth"
+  params = {
+      "client_id": CLIENT_ID,
+      "redirect_uri": REDIRECT_URI,
+      "response_type": "code",
+      "scope": "openid email profile",
+      "access_type": "offline",
+      "prompt": "select_account",
+  }
+  url = f"{google_auth_url}?{urllib.parse.urlencode(params)}"
 
-    with col_center:
-        st.markdown(
-            "<div style='text-align: center; font-size: 28px; font-weight: 600; margin-bottom: 30px; color: #111;'>Se connecter</div>",
-            unsafe_allow_html=True)
-
-        # La carte blanche aux bordures arrondies (similaire au modèle)
-        with st.container(border=True):
-            st.markdown(
-                "<div style='text-align: center; font-weight: 700; font-size: 18px; color: #111; margin-top: 10px;'>🤖 Meroung AI</div>",
-                unsafe_allow_html=True)
-            st.markdown(
-                "<div style='text-align: center; color: #666; font-size: 13px; margin-bottom: 25px;'>Personnel auxiliaire pédagogique</div>",
-                unsafe_allow_html=True)
-
-            # Le bouton de connexion bien rangé À L'INTÉRIEUR de la carte
-            if st.button("Continuer avec Google", use_container_width=True):
-                st.login()
-
-            st.markdown(
-                "<div style='text-align: center; color: #999; font-size: 11px; margin-top: 20px; margin-bottom: 10px;'>Connexion sécurisée avec Google</div>",
-                unsafe_allow_html=True)
-
-    st.stop()
-
-
+  # Bouton de connexion stylisé qui redirige vers Google
+  st.markdown(
+      f"""
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="{url}" target="_self" style="
+                background-color: #4285F4;
+                color: white;
+                padding: 12px 24px;
+                text-decoration: none;
+                font-weight: bold;
+                border-radius: 4px;
+                display: inline-block;
+            ">Continuer avec Google</a>
+        </div>
+        """,
+      unsafe_allow_html=True,
+  )
+  st.stop()
+else:
+  # L'utilisateur est connecté ! On affiche son nom et son application
+  user = st.session_state["user_info"]
+  st.success(f"Bienvenue, {user.get('name', 'Utilisateur')} !")
+  if st.button("Se déconnecter"):
+    st.session_state["user_info"] = None
+    st.rerun()
 # ============================================================
 # 👤 UTILISATEUR CONNECTÉ
 # ============================================================
