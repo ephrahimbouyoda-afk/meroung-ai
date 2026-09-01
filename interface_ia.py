@@ -414,7 +414,7 @@ def analyser_travail_eleve(image_bytes, context, prompt_utilisateur):
     generation_config = {"max_output_tokens": 2048}
 
     model = genai.GenerativeModel(
-        model_name=GEMINI_MODEL,
+        model_name="models/gemini-3.6-flash",
         system_instruction=system_instruction,
         generation_config=generation_config,
     )
